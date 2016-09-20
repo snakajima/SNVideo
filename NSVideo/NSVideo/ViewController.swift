@@ -27,13 +27,19 @@ class ViewController: UIViewController {
     lazy var cameraInput:AVCaptureDeviceInput? = {
         return try? AVCaptureDeviceInput(device: self.backCamera)
     }()
+    /*
     lazy var imageOutput:AVCaptureStillImageOutput? = {
         let output = AVCaptureStillImageOutput()
         output.outputSettings = [ AVVideoCodecKey : AVVideoCodecJPEG ]
         return output
     }()
+    */
+    lazy var videoOutput:AVCaptureVideoDataOutput? = {
+        let output = AVCaptureVideoDataOutput()
+        return output
+    }()
     lazy var videoConnection:AVCaptureConnection? = {
-        for connection in self.imageOutput!.connections as! [AVCaptureConnection] {
+        for connection in self.videoOutput?.connections as! [AVCaptureConnection] {
             for port in connection.inputPorts {
                 if port.mediaType == AVMediaTypeVideo {
                     return connection
@@ -58,9 +64,10 @@ class ViewController: UIViewController {
         if let input = cameraInput {
             if session.canAddInput(input) {
                 session.addInput(input)
-                if let output = imageOutput {
+                if let output = videoOutput {
                     if session.canAddOutput(output) {
                         session.addOutput(output)
+                        output.setSampleBufferDelegate(self, queue: dispatch_get_main_queue())
                         if let _ = videoConnection {
                             session.startRunning()
                             playerLayer = AVCaptureVideoPreviewLayer(session: session)
@@ -78,7 +85,11 @@ class ViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+}
 
-
+extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(captureOutput: AVCaptureOutput!, didOutputSampleBuffer sampleBuffer: CMSampleBuffer!, fromConnection connection: AVCaptureConnection!) {
+        print("buffer")
+    }
 }
 
