@@ -15,6 +15,9 @@ kernel void SNTrimMask(texture2d<float,access::read>   inputImage   [[ texture(0
                       const uint2 gid [[ thread_position_in_grid ]]) {
 
     float4 pixel = inputImage.read(gid);
-    outputImage.write(pixel, gid);
+    float4 pixel2 = pixel;
+    pixel2.r = pixel.g;
+    pixel2.g = pixel.r;
+    outputImage.write(pixel2, gid);
 }
 

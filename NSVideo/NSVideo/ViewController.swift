@@ -125,7 +125,6 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             return
         }
         let texture = CVMetalTextureGetTexture(metalTexture)
-        print("buffer")
         guard let drawable = viewSub.currentDrawable else {
             print("failed 2", status)
             return
