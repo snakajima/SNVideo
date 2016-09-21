@@ -18,7 +18,11 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ynQ-UG-lvJ">
-                                <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                                <rect key="frame" x="0.0" y="0.0" width="320" height="180"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            </view>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="tzq-vu-LNE" customClass="MTKView">
+                                <rect key="frame" x="0.0" y="180" width="320" height="300"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
                         </subviews>
@@ -26,14 +30,19 @@
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="ynQ-UG-lvJ" secondAttribute="trailing" id="6Hp-Dg-RDy"/>
                             <constraint firstItem="ynQ-UG-lvJ" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="6Wa-FW-dcS"/>
+                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="tzq-vu-LNE" secondAttribute="bottom" id="8d4-q4-ka6"/>
                             <constraint firstItem="ynQ-UG-lvJ" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="NTc-G8-oQi"/>
-                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="ynQ-UG-lvJ" secondAttribute="bottom" id="WMX-du-vO2"/>
+                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="ynQ-UG-lvJ" secondAttribute="bottom" constant="300" id="WMX-du-vO2"/>
+                            <constraint firstAttribute="trailing" secondItem="tzq-vu-LNE" secondAttribute="trailing" id="add-Oc-viV"/>
+                            <constraint firstItem="tzq-vu-LNE" firstAttribute="top" secondItem="ynQ-UG-lvJ" secondAttribute="bottom" id="add-VL-ED8"/>
+                            <constraint firstItem="tzq-vu-LNE" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="qyO-Cw-aBA"/>
                         </constraints>
                     </view>
                     <nil key="simulatedStatusBarMetrics"/>
                     <simulatedScreenMetrics key="simulatedDestinationMetrics"/>
                     <connections>
                         <outlet property="viewMain" destination="ynQ-UG-lvJ" id="6Kr-o8-FDV"/>
+                        <outlet property="viewSub" destination="tzq-vu-LNE" id="9Wd-aI-AcS"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

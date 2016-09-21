@@ -8,9 +8,11 @@
 
 import UIKit
 import AVFoundation
+import MetalKit
 
 class ViewController: UIViewController {
     @IBOutlet var viewMain : UIView!
+    @IBOutlet var viewSub : MTKView!
     var playerLayer : CALayer?
 
     static let device = MTLCreateSystemDefaultDevice()!
@@ -68,6 +70,7 @@ class ViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         playerLayer?.frame = viewMain.bounds
+        viewSub.device = ViewController.device
     }
 
     override func viewDidLoad() {
@@ -76,6 +79,7 @@ class ViewController: UIViewController {
         if session.canSetSessionPreset(AVCaptureSessionPreset1280x720) {
             session.sessionPreset = AVCaptureSessionPreset1280x720
         }
+        viewSub.framebufferOnly = false
 
         if let input = cameraInput {
             if session.canAddInput(input) {
@@ -113,15 +117,37 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
-        var metalTexture:Unmanaged<CVMetalTextureRef>?
-        let status = CVMetalTextureCacheCreateTextureFromImage(nil, textureCache, pixelBuffer, nil, .BGRA8Unorm, width, height, 0, &metalTexture)
-        if let metalTexture = metalTexture?.takeUnretainedValue() where status == kCVReturnSuccess {
-            let texture = CVMetalTextureGetTexture(metalTexture)
-            print("buffer")
-        } else {
-            print("failed", status)
+        var metalTextureU:Unmanaged<CVMetalTextureRef>?
+        let status = CVMetalTextureCacheCreateTextureFromImage(nil, textureCache, pixelBuffer, nil, .BGRA8Unorm, width, height, 0, &metalTextureU)
+        defer { metalTextureU?.release() }
+        guard let metalTexture = metalTextureU?.takeUnretainedValue() where status == kCVReturnSuccess else {
+            print("failed 1", status)
+            return
         }
-        metalTexture?.release()
+        let texture = CVMetalTextureGetTexture(metalTexture)
+        print("buffer")
+        guard let drawable = viewSub.currentDrawable else {
+            print("failed 2", status)
+            return
+        }
+        guard let psMask = ViewController.psMask else {
+            print("failed 3")
+            return
+        }
+        let cmdBuffer:MTLCommandBuffer = {
+            let cmdBuffer = ViewController.queue.commandBuffer()
+            let encoder = cmdBuffer.computeCommandEncoder(); defer { encoder.endEncoding() }
+            encoder.setTexture(texture, atIndex: 0)
+            encoder.setTexture(drawable.texture, atIndex: 1)
+            encoder.setComputePipelineState(psMask)
+            let threadsPerThreadgroup = MTLSize(width: 8, height: 8, depth: 1)
+            let threadgroupsPerGrid = MTLSize(width: width / 8, height: height / 8, depth: 1)
+            encoder.dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
+            return cmdBuffer
+        }()
+        cmdBuffer.commit()
+        cmdBuffer.waitUntilCompleted()
+        drawable.present()
     }
 }
 
