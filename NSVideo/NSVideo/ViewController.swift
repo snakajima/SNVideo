@@ -144,9 +144,10 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             encoder.dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
             return cmdBuffer
         }()
+        cmdBuffer.addCompletedHandler { (_) in
+            drawable.present()
+        }
         cmdBuffer.commit()
-        cmdBuffer.waitUntilCompleted()
-        drawable.present()
     }
 }
 
