@@ -14,6 +14,7 @@ class ViewController: UIViewController {
     @IBOutlet var viewMain : UIView!
     @IBOutlet var viewSub : MTKView!
     var playerLayer : CALayer?
+    let outputQueue = dispatch_queue_create("VideoOutputQueue", DISPATCH_QUEUE_SERIAL)
 
     static let device = MTLCreateSystemDefaultDevice()!
     static let queue = ViewController.device.newCommandQueue()
@@ -87,7 +88,7 @@ class ViewController: UIViewController {
                 if let output = videoOutput {
                     if session.canAddOutput(output) {
                         session.addOutput(output)
-                        output.setSampleBufferDelegate(self, queue: dispatch_get_main_queue())
+                        output.setSampleBufferDelegate(self, queue: outputQueue)
                         if let _ = videoConnection {
                             session.startRunning()
                             playerLayer = AVCaptureVideoPreviewLayer(session: session)
@@ -144,10 +145,13 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             encoder.dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
             return cmdBuffer
         }()
-        cmdBuffer.addCompletedHandler { (_) in
-            drawable.present()
-        }
         cmdBuffer.commit()
+        cmdBuffer.waitUntilCompleted()
+        drawable.present()
+    }
+    
+    func captureOutput(captureOutput: AVCaptureOutput!, didDropSampleBuffer sampleBuffer: CMSampleBuffer!, fromConnection connection: AVCaptureConnection!) {
+        print("didDropSampleBuffer")
     }
 }
 
