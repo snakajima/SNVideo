@@ -13,6 +13,13 @@ class ViewController: UIViewController {
     @IBOutlet var viewMain : UIView!
     var playerLayer : CALayer?
 
+    static let device = MTLCreateSystemDefaultDevice()!
+    lazy var textureCache:CVMetalTextureCache = {
+        var cache:Unmanaged<CVMetalTextureCache>?
+        let status = CVMetalTextureCacheCreate(nil, nil, ViewController.device, nil, &cache)
+        print("textureCache success=", status == kCVReturnSuccess)
+        return cache!.takeUnretainedValue()
+    }()
     let session = AVCaptureSession()
     var backCamera : AVCaptureDevice? = {
         for device in AVCaptureDevice.devices() as! [AVCaptureDevice] {
@@ -36,6 +43,7 @@ class ViewController: UIViewController {
     */
     lazy var videoOutput:AVCaptureVideoDataOutput? = {
         let output = AVCaptureVideoDataOutput()
+        output.videoSettings = [kCVPixelBufferPixelFormatTypeKey:Int(kCVPixelFormatType_32BGRA)]
         return output
     }()
     lazy var videoConnection:AVCaptureConnection? = {
@@ -87,9 +95,25 @@ class ViewController: UIViewController {
     }
 }
 
+// http://flexmonkey.blogspot.co.uk/2015/07/generating-filtering-metal-textures.html
+
 extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(captureOutput: AVCaptureOutput!, didOutputSampleBuffer sampleBuffer: CMSampleBuffer!, fromConnection connection: AVCaptureConnection!) {
-        print("buffer")
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            print("no pixelBuffer")
+            return
+        }
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        var metalTexture:Unmanaged<CVMetalTextureRef>?
+        let status = CVMetalTextureCacheCreateTextureFromImage(nil, textureCache, pixelBuffer, nil, .BGRA8Unorm, width, height, 0, &metalTexture)
+        if let metalTexture = metalTexture?.takeUnretainedValue() where status == kCVReturnSuccess {
+            let texture = CVMetalTextureGetTexture(metalTexture)
+            print("buffer")
+        } else {
+            print("failed", status)
+        }
+        metalTexture?.release()
     }
 }
 
