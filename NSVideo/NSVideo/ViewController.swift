@@ -14,6 +14,14 @@ class ViewController: UIViewController {
     var playerLayer : CALayer?
 
     static let device = MTLCreateSystemDefaultDevice()!
+    static let queue = ViewController.device.newCommandQueue()
+    static let psMask:MTLComputePipelineState? = {
+        if let function = ViewController.device.newDefaultLibrary()?.newFunctionWithName("SNTrimMask") {
+            return try! ViewController.device.newComputePipelineStateWithFunction(function)
+        }
+        return nil
+    }()
+
     lazy var textureCache:CVMetalTextureCache = {
         var cache:Unmanaged<CVMetalTextureCache>?
         let status = CVMetalTextureCacheCreate(nil, nil, ViewController.device, nil, &cache)
