@@ -20,7 +20,10 @@ class ViewController: UIViewController {
     static let queue = ViewController.device.newCommandQueue()
     static let psMask:MTLComputePipelineState? = {
         if let function = ViewController.device.newDefaultLibrary()?.newFunctionWithName("SNTrimMask") {
-            return try! ViewController.device.newComputePipelineStateWithFunction(function)
+            let ps = try! ViewController.device.newComputePipelineStateWithFunction(function)
+            print("max =", ps.maxTotalThreadsPerThreadgroup)
+            print("width = ", ps.threadExecutionWidth)
+            return ps
         }
         return nil
     }()
@@ -55,6 +58,7 @@ class ViewController: UIViewController {
     lazy var videoOutput:AVCaptureVideoDataOutput? = {
         let output = AVCaptureVideoDataOutput()
         output.videoSettings = [kCVPixelBufferPixelFormatTypeKey:Int(kCVPixelFormatType_32BGRA)]
+        output.alwaysDiscardsLateVideoFrames = true
         return output
     }()
     lazy var videoConnection:AVCaptureConnection? = {
@@ -82,24 +86,20 @@ class ViewController: UIViewController {
         }
         viewSub.framebufferOnly = false
 
-        if let input = cameraInput {
-            if session.canAddInput(input) {
-                session.addInput(input)
-                if let output = videoOutput {
-                    if session.canAddOutput(output) {
-                        session.addOutput(output)
-                        output.setSampleBufferDelegate(self, queue: outputQueue)
-                        if let _ = videoConnection {
-                            session.startRunning()
-                            playerLayer = AVCaptureVideoPreviewLayer(session: session)
-                            playerLayer?.frame = viewMain.bounds
-                            viewMain.layer.insertSublayer(playerLayer!, atIndex:0)
-                        }
-                    }
-                }
+        if let input = cameraInput where session.canAddInput(input) {
+            session.beginConfiguration()
+            session.addInput(input)
+            if let output = videoOutput where session.canAddOutput(output) {
+                session.addOutput(output)
+                output.setSampleBufferDelegate(self, queue: outputQueue)
             }
+            session.commitConfiguration()
+
+            session.startRunning()
+            playerLayer = AVCaptureVideoPreviewLayer(session: session)
+            playerLayer?.frame = viewMain.bounds
+            viewMain.layer.insertSublayer(playerLayer!, atIndex:0)
         }
-        
     }
 
     override func didReceiveMemoryWarning() {
@@ -140,9 +140,9 @@ extension ViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
             encoder.setTexture(texture, atIndex: 0)
             encoder.setTexture(drawable.texture, atIndex: 1)
             encoder.setComputePipelineState(psMask)
-            let threadsPerThreadgroup = MTLSize(width: 8, height: 8, depth: 1)
-            let threadgroupsPerGrid = MTLSize(width: width / 8, height: height / 8, depth: 1)
-            encoder.dispatchThreadgroups(threadgroupsPerGrid, threadsPerThreadgroup: threadsPerThreadgroup)
+            let threadsCount = MTLSize(width: 16, height: min(16, psMask.maxTotalThreadsPerThreadgroup/16), depth: 1)
+            let groupsCount = MTLSize(width: width / threadsCount.width, height: height/threadsCount.height, depth: 1)
+            encoder.dispatchThreadgroups(groupsCount, threadsPerThreadgroup: threadsCount)
             return cmdBuffer
         }()
         cmdBuffer.commit()
