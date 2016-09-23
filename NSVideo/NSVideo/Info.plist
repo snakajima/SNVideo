@@ -40,5 +40,7 @@
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>This is an camera app!</string>
 </dict>
 </plist>
